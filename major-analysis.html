@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专业筛选分析 - 考公友好专业矩阵</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system,"Microsoft YaHei",sans-serif; background:#f5f7fa; color:#1a1a2e; padding:20px; }
+  .container { max-width:1200px; margin:0 auto; }
+  h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
+  .subtitle { color:#666; font-size:13px; margin-bottom:20px; }
+  .card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .card h2 { font-size:15px; font-weight:600; margin-bottom:12px; }
+  .card h2 span { font-size:12px; font-weight:400; color:#888; margin-left:8px; }
+
+  /* 统计卡 */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .stat { text-align:center; padding:16px; border-radius:8px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .stat .num { font-size:28px; font-weight:700; }
+  .stat .label { font-size:11px; color:#666; margin-top:4px; }
+  .s1 .num { color:#dc2626; } .s1 { background:#fef2f2; }
+  .s2 .num { color:#ea580c; } .s2 { background:#fff7ed; }
+  .s3 .num { color:#2563eb; } .s3 { background:#eff6ff; }
+  .s4 .num { color:#16a34a; } .s4 { background:#f0fdf4; }
+
+  /* 矩阵表 */
+  .matrix-wrap { overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; }
+  table.matrix { width:100%; border-collapse:collapse; font-size:12px; min-width:900px; }
+  .matrix th { background:#f8fafc; padding:8px 6px; text-align:center; font-weight:600; border-bottom:2px solid #e2e8f0; position:sticky; top:0; white-space:nowrap; }
+  .matrix th.school-col { text-align:left; min-width:160px; }
+  .matrix td { padding:6px; border-bottom:1px solid #f0f0f0; text-align:center; }
+  .matrix td:first-child { text-align:left; font-weight:500; }
+  .matrix tr:hover td { background:#f8fafc; }
+  .matrix tr.tier-冲 td:first-child { border-left:3px solid #dc2626; }
+  .matrix tr.tier-稳 td:first-child { border-left:3px solid #ea580c; }
+  .matrix tr.tier-保 td:first-child { border-left:3px solid #16a34a; }
+  .dot { display:inline-block; width:22px; height:22px; border-radius:50%; line-height:22px; font-size:10px; font-weight:700; color:#fff; }
+  .dot-core { background:#2563eb; }
+  .dot-good { background:#60a5fa; }
+  .dot-ok { background:#bfdbfe; color:#1e40af; }
+  .dot-no { background:#f1f5f9; color:#cbd5e1; }
+  .count-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .cb-high { background:#dcfce7; color:#166534; }
+  .cb-mid { background:#fef9c3; color:#854d0e; }
+  .cb-low { background:#fee2e2; color:#991b1b; }
+
+  /* 标签 */
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10.5px; font-weight:500; margin-right:4px; }
+  .tag-冲 { background:#fef2f2; color:#dc2626; }
+  .tag-稳 { background:#fff7ed; color:#ea580c; }
+  .tag-保 { background:#f0fdf4; color:#16a34a; }
+  .tag-公办 { background:#eff6ff; color:#2563eb; }
+  .tag-star { background:#fefce8; color:#ca8a04; }
+
+  /* 推荐组合 */
+  .rec-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .rec-card { padding:16px; border-radius:8px; border:1px solid #e2e8f0; }
+  .rec-card h3 { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .rec-card .school-name { font-size:13px; font-weight:600; color:#1e40af; }
+  .rec-card .major-list { font-size:12px; color:#555; margin-top:6px; line-height:1.7; }
+  .rec-card .reason { font-size:11px; color:#888; margin-top:8px; padding-top:8px; border-top:1px dashed #e2e8f0; }
+
+  /* 策略 */
+  .strategy-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .strategy-item { padding:14px; background:#f8fafc; border-radius:8px; }
+  .strategy-item .title { font-size:13px; font-weight:600; margin-bottom:6px; }
+  .strategy-item .desc { font-size:12px; color:#666; line-height:1.7; }
+
+  .legend { display:flex; gap:16px; margin-bottom:12px; font-size:11px; color:#666; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:4px; }
+
+  .footer { text-align:center; color:#bbb; font-size:11px; margin-top:20px; }
+
+  @media(max-width:800px){
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .rec-grid { grid-template-columns:1fr; }
+    .strategy-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>专业筛选 · 考公友好专业矩阵</h1>
+  <p class="subtitle">2026年江苏历史类504分 · 位次44282 · 基于2025年招生专业数据 · Step 3/4</p>
+
+  <!-- 统计概览 -->
+  <div class="stats">
+    <div class="stat s1"><div class="num">23</div><div class="label">分析院校数</div></div>
+    <div class="stat s2"><div class="num">12</div><div class="label">考公友好专业类别</div></div>
+    <div class="stat s3"><div class="num">8</div><div class="label">最强考公院校</div></div>
+    <div class="stat s4"><div class="num">3</div><div class="label">黄金专业组合</div></div>
+  </div>
+
+  <!-- 专业矩阵 -->
+  <div class="card">
+    <h2>院校 × 考公友好专业 矩阵<span>蓝圈=开设 · 颜色越深考公适配度越高</span></h2>
+    <div class="legend">
+      <div class="legend-item"><span class="dot dot-core" style="width:16px;height:16px;line-height:16px;font-size:8px">&#10003;</span> 核心考公专业(国考/省考岗位多)</div>
+      <div class="legend-item"><span class="dot dot-good" style="width:16px;height:16px;line-height:16px;font-size:8px">&#10003;</span> 优质考公专业</div>
+      <div class="legend-item"><span class="dot dot-ok" style="width:16px;height:16px;line-height:16px;font-size:8px">&#10003;</span> 可考公专业</div>
+      <div class="legend-item"><span class="dot dot-no" style="width:16px;height:16px;line-height:16px;font-size:8px">-</span> 未开设</div>
+    </div>
+    <div class="matrix-wrap">
+      <table class="matrix" id="matrixTable">
+        <thead>
+          <tr>
+            <th class="school-col">院校</th>
+            <th>法学</th>
+            <th>汉语言</th>
+            <th>会计学</th>
+            <th>审计学</th>
+            <th>财务管理</th>
+            <th>行政管理</th>
+            <th>人力资源</th>
+            <th>金融学</th>
+            <th>新闻学</th>
+            <th>思政教育</th>
+            <th>经济学</th>
+            <th>信息管理</th>
+            <th>考公专业数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 冲 tier -->
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>南财红山学院<br><small style="color:#888">517分·南京</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">6</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>南审金审学院<br><small style="color:#888">525分·南京</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">5</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>南师大泰州学院<br><small style="color:#888">518分·泰州</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">5</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span><span class="tag tag-公办">公办</span>浙江万里学院<br><small style="color:#888">519分·宁波</small></td>
+            <td><span class="dot dot-ok">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">6</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>南理工紫金学院<br><small style="color:#888">522分·南京</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">4</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>扬大广陵学院<br><small style="color:#888">518分·扬州</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">4</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>上海杉达学院<br><small style="color:#888">513分·上海</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">4</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>苏科大天平学院<br><small style="color:#888">516分·苏州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">3</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>东大成贤学院<br><small style="color:#888">521分·南京</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">2</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>苏大应用技术学院<br><small style="color:#888">511分·苏州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">2</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>南邮通达学院<br><small style="color:#888">516分·南京</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">1</span></td>
+          </tr>
+          <tr class="tier-冲">
+            <td><span class="tag tag-冲">冲</span>江科大苏州理工<br><small style="color:#888">512分·苏州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">1</span></td>
+          </tr>
+
+          <!-- 稳 tier -->
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>南航金城学院<br><small style="color:#888">509分·南京</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">5</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>南师大中北学院<br><small style="color:#888">507分·镇江</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">6</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>苏师大科文学院<br><small style="color:#888">502分·徐州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">5</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>无锡太湖学院<br><small style="color:#888">502分·无锡</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-high">6</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>常大怀德学院<br><small style="color:#888">504分·常州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">3</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>南工大浦江学院<br><small style="color:#888">509分·南京</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">3</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>厦大嘉庚学院<br><small style="color:#888">505分·漳州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">1</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>川大锦江学院<br><small style="color:#888">506分·成都</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-mid">4</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>矿大徐海学院<br><small style="color:#888">509分·徐州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-good">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">2</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>南理工泰州科技<br><small style="color:#888">508分·泰州</small></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">1</span></td>
+          </tr>
+          <tr class="tier-稳">
+            <td><span class="tag tag-稳">稳</span>辽师大海华学院<br><small style="color:#888">504分·大连</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">2</span></td>
+          </tr>
+
+          <!-- 保 tier (selected) -->
+          <tr class="tier-保">
+            <td><span class="tag tag-保">保</span>三江学院<br><small style="color:#888">498分·南京</small></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-core">&#10003;</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="dot dot-no">-</span></td>
+            <td><span class="count-badge cb-low">2</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 推荐组合 -->
+  <div class="card" style="border-left:4px solid #dc2626">
+    <h2>最佳考公志愿组合<span>按冲/稳/保策略推荐</span></h2>
+    <div class="rec-grid">
+      <div class="rec-card" style="border-left:3px solid #dc2626">
+        <h3><span class="tag tag-冲">冲</span> 财经考公路线</h3>
+        <div class="school-name">南京财经大学红山学院 (517分)</div>
+        <div class="major-list">首选: <strong>会计学 / 审计学</strong><br>次选: 法学 / 财务管理 / 金融学</div>
+        <div class="reason">6个考公专业全覆盖，财经院校背景在税务、审计、财政系统考公中有天然优势。会计学+审计学组合可覆盖国考/省考大量岗位。</div>
+      </div>
+      <div class="rec-card" style="border-left:3px solid #dc2626">
+        <h3><span class="tag tag-冲">冲</span> 审计王牌路线</h3>
+        <div class="school-name">南京审计大学金审学院 (525分)</div>
+        <div class="major-list">首选: <strong>审计学</strong><br>次选: 会计学 / 行政管理 / 金融学</div>
+        <div class="reason">审计学是立校之本，南审体系招牌。审计署、各地审计局定向招录，专业壁垒高，竞争相对小。</div>
+      </div>
+      <div class="rec-card" style="border-left:3px solid #dc2626">
+        <h3><span class="tag tag-冲">冲</span> 法学+汉语言路线</h3>
+        <div class="school-name">扬州大学广陵学院 (518分)</div>
+        <div class="major-list">首选: <strong>法学 / 汉语言文学</strong><br>次选: 会计学 / 财务管理</div>
+        <div class="reason">同时拥有法学+汉语言文学两大"国考万金油"专业，综合覆盖公检法、政府办、宣传部等核心岗位。</div>
+      </div>
+    </div>
+    <div class="rec-grid" style="margin-top:16px">
+      <div class="rec-card" style="border-left:3px solid #ea580c">
+        <h3><span class="tag tag-稳">稳</span> 六边形考公</h3>
+        <div class="school-name">南京师范大学中北学院 (507分)</div>
+        <div class="major-list">首选: <strong>法学 / 汉语言文学</strong><br>次选: 新闻学 / 会计学 / 行政管理 / 金融学</div>
+        <div class="reason">6个考公专业，法学+汉语言+新闻+行政"四合一"罕见配置。依托南师大资源，传媒类专业实力强。考公覆盖面最广。</div>
+      </div>
+      <div class="rec-card" style="border-left:3px solid #ea580c">
+        <h3><span class="tag tag-稳">稳</span> 汉语言大体量</h3>
+        <div class="school-name">江苏师范大学科文学院 (502分)</div>
+        <div class="major-list">首选: <strong>汉语言文学</strong>(200人!)<br>次选: 会计学 / 行政管理 / 经济学</div>
+        <div class="reason">汉语言文学招200人，录取概率极高。依托江苏师大中文系，师范底蕴深厚。汉语言是国考/省考岗位最多的专业之一。</div>
+      </div>
+      <div class="rec-card" style="border-left:3px solid #ea580c">
+        <h3><span class="tag tag-稳">稳</span> 思政+会计大体量</h3>
+        <div class="school-name">南京航空航天大学金城学院 (509分)</div>
+        <div class="major-list">首选: <strong>会计学(125人) / 汉语言(92人)</strong><br>次选: 思想政治教育(70人) / 财务管理</div>
+        <div class="reason">会计+汉语言+思政三大专业招生体量远超其他学校。思政教育可对口纪委监委、宣传部、组织部等岗位，是独有考公利器。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 考公专业解读 -->
+  <div class="card">
+    <h2>考公友好专业解读<span>哪些专业能报的岗位最多？</span></h2>
+    <div class="strategy-grid">
+      <div class="strategy-item">
+        <div class="title">法学 — 考公第一专业</div>
+        <div class="desc">国考/省考中约30%的岗位不限专业或限法学类。公检法系统（法院、检察院、公安局）、纪委监委、各级政府法制部门均大量招录法学专业。通过司法考试后竞争力更强。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">汉语言文学 — 岗位最多</div>
+        <div class="desc">各级政府办、党委办、宣传部、文旅局的"笔杆子"岗位几乎必招汉语言文学。国考中不限专业岗位+限中文类岗位合计约占40%。写作能力也是申论考试的核心竞争力。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">会计学/审计学 — 专业壁垒</div>
+        <div class="desc">税务局、审计局、财政局、各单位财务处定向招录。专业门槛高意味着竞争比相对低（不像法学/汉语言那样几万人抢一个岗位）。审计学尤其稀缺，开设院校少。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">思想政治教育 — 隐藏王牌</div>
+        <div class="desc">对口纪委监委、组织部、宣传部、党校等党务系统岗位。近年招录需求稳定增长。开设院校少（南航金城学院是少数在历史类招生的），竞争壁垒高。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">行政管理/人力资源 — 通用型</div>
+        <div class="desc">可报考不限专业的综合管理岗位，以及各单位人事处、办公室等。岗位多但竞争也大（因为太多人学这个专业）。建议搭配其他技能（如公文写作能力）增加竞争力。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">金融学/新闻学 — 差异化</div>
+        <div class="desc">金融学对口银保监、证监会、人民银行等金融监管机构；新闻学对口宣传系统、融媒体中心。这两个专业开设院校在历史类中较少，属于差异化竞争路线。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关键发现 -->
+  <div class="card" style="border-left:4px solid #ea580c">
+    <h2>关键发现 & 策略建议</h2>
+    <div class="strategy-grid">
+      <div class="strategy-item">
+        <div class="title">优先选"考公专业≥4个"的院校</div>
+        <div class="desc">南财红山(6)、南师大中北(6)、无锡太湖(6)、浙江万里(6)、南审金审(5)、南师泰州(5)、南航金城(5)、苏师大科文(5) — 这8所是考公友好度最高的院校。入学后即使换专业方向也有充足的考公备选。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">警惕"只有财务管理"的院校</div>
+        <div class="desc">南邮通达、江科大苏州理工、南理工泰州 — 这三所历史类仅有1个考公友好专业（财务管理）。如果考公是唯一目标，建议慎选。不过南邮通达的通信背景在企业就业方面有优势。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">招生体量很重要</div>
+        <div class="desc">南航金城会计招125人、苏师大科文汉语言招200人 — 大体量意味着你的位次大概率能录取。而无锡太湖法学只招7人 — 虽然专业好但录取风险高。填报时要关注具体专业的投档线，不能只看学校最低分。</div>
+      </div>
+      <div class="strategy-item">
+        <div class="title">下一步：决策矩阵</div>
+        <div class="desc">院校+专业确定后，最后一步是综合打分。将地理偏好、学费、就业率、考公适配度等维度加权，生成最终志愿排序。同一所学校可能有多个考公专业，需要选出具体的"学校+专业"组合作为志愿。</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">数据来源：gk100.com / hfplg.com / 各校招生信息网 · 2025年招生专业目录 · 分析仅供参考</p>
+</div>
+</body>
+</html>
