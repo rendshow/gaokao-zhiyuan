@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>院校机会池分析 - 陆浩然</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system,"Microsoft YaHei",sans-serif; background:#f5f7fa; color:#1a1a2e; padding:20px; }
+  .container { max-width:1200px; margin:0 auto; }
+  h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
+  .subtitle { color:#666; font-size:13px; margin-bottom:20px; }
+  .card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .card h2 { font-size:15px; font-weight:600; margin-bottom:12px; }
+  .card h2 span { font-size:12px; font-weight:400; color:#888; margin-left:8px; }
+
+  /* 筛选标签 */
+  .filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .filter-btn { padding:6px 14px; border:1px solid #e2e8f0; border-radius:20px; font-size:12px; cursor:pointer; background:#fff; transition:all .2s; }
+  .filter-btn:hover { border-color:#2563eb; color:#2563eb; }
+  .filter-btn.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+
+  /* 表格 */
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th { background:#f8fafc; padding:8px 10px; text-align:left; font-weight:600; border-bottom:2px solid #e2e8f0; position:sticky; top:0; }
+  td { padding:8px 10px; border-bottom:1px solid #f0f0f0; }
+  tr:hover td { background:#f8fafc; }
+  tr.highlight-row td { background:#fff7ed; font-weight:500; }
+
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10.5px; font-weight:500; }
+  .tag-冲 { background:#fef2f2; color:#dc2626; }
+  .tag-稳 { background:#fff7ed; color:#ea580c; }
+  .tag-保 { background:#f0fdf4; color:#16a34a; }
+  .tag-公办 { background:#eff6ff; color:#2563eb; }
+  .tag-民办 { background:#fdf4ff; color:#9333ea; }
+  .tag-长三角 { background:#ecfdf5; color:#059669; }
+  .tag-考公 { background:#fefce8; color:#ca8a04; }
+
+  .school-table-wrap { max-height:520px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; }
+
+  /* 梯度分布图 */
+  .chart-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .chart-wrap { position:relative; height:300px; }
+
+  /* 汇总统计 */
+  .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .summary-item { text-align:center; padding:16px; border-radius:8px; }
+  .summary-item .num { font-size:28px; font-weight:700; }
+  .summary-item .label { font-size:11px; color:#666; margin-top:4px; }
+  .s-冲 { background:#fef2f2; } .s-冲 .num { color:#dc2626; }
+  .s-稳 { background:#fff7ed; } .s-稳 .num { color:#ea580c; }
+  .s-保 { background:#f0fdf4; } .s-保 .num { color:#16a34a; }
+  .s-专 { background:#eff6ff; } .s-专 .num { color:#2563eb; }
+
+  /* 专科专区 */
+  .zhuan-card { border-left:4px solid #2563eb; }
+  .footer { text-align:center; color:#bbb; font-size:11px; margin-top:20px; }
+
+  @media(max-width:800px){
+    .chart-row { grid-template-columns:1fr; }
+    .summary { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>院校机会池 · 冲稳保全景</h1>
+  <p class="subtitle">2026年江苏历史类504分 · 位次44282 · 基于2025年投档数据 · 排除中外合办</p>
+
+  <!-- 统计概览 -->
+  <div class="summary">
+    <div class="summary-item s-冲"><div class="num">11</div><div class="label">冲 · 位次35000-42000</div></div>
+    <div class="summary-item s-稳"><div class="num">14</div><div class="label">稳 · 位次42000-47000</div></div>
+    <div class="summary-item s-保"><div class="num">10</div><div class="label">保 · 位次47000-55000</div></div>
+    <div class="summary-item s-专"><div class="num">5</div><div class="label">优质专科 · 就业/考公强</div></div>
+  </div>
+
+  <!-- 本科批院校表 -->
+  <div class="card">
+    <h2>本科批院校池<span>2025年投档数据 · 按位次从高到低排列</span></h2>
+    <div class="filters">
+      <div class="filter-btn active" onclick="filterTable('all')">全部</div>
+      <div class="filter-btn" onclick="filterTable('冲')">冲</div>
+      <div class="filter-btn" onclick="filterTable('稳')">稳</div>
+      <div class="filter-btn" onclick="filterTable('保')">保</div>
+      <div class="filter-btn" onclick="filterTable('公办')">公办</div>
+      <div class="filter-btn" onclick="filterTable('长三角')">长三角</div>
+      <div class="filter-btn" onclick="filterTable('考公')">考公友好</div>
+    </div>
+    <div class="school-table-wrap">
+      <table id="schoolTable">
+        <thead><tr>
+          <th>梯队</th><th>学校</th><th>性质</th><th>城市</th><th>2025分</th><th>2025位次</th><th>2026≈分</th><th>标签</th><th>备注</th>
+        </tr></thead>
+        <tbody>
+          <!-- 冲 -->
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>南京审计大学金审学院</td><td>民办</td><td>南京</td><td>525</td><td>35056</td><td>~513</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>财经审计方向，考公对口度高</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>南京理工大学紫金学院</td><td>民办</td><td>南京</td><td>522</td><td>36539</td><td>~510</td><td><span class="tag tag-长三角">长三角</span></td><td>理工科背景，计算机/工程类</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>东南大学成贤学院</td><td>民办</td><td>南京</td><td>521</td><td>37029</td><td>~510</td><td><span class="tag tag-长三角">长三角</span></td><td>工科背景，土木/建筑类</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>上海杉达学院</td><td>民办</td><td>上海</td><td>513</td><td>~41000</td><td>~503</td><td><span class="tag tag-长三角">长三角</span></td><td>上海就业资源好</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>扬州大学广陵学院</td><td>民办</td><td>扬州</td><td>518</td><td>38489</td><td>~507</td><td><span class="tag tag-长三角">长三角</span></td><td>综合类，法学/汉语言可选</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>南京师范大学泰州学院</td><td>民办</td><td>泰州</td><td>518</td><td>38489</td><td>~507</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>师范方向，汉语言/教育类</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>南京财经大学红山学院</td><td>民办</td><td>南京</td><td>517</td><td>38961</td><td>~506</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>财经方向，会计/金融考公对口</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>苏州科技大学天平学院</td><td>民办</td><td>苏州</td><td>516</td><td>39429</td><td>~506</td><td><span class="tag tag-长三角">长三角</span></td><td>苏州就业好，工程管理类</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>南京邮电大学通达学院</td><td>民办</td><td>南京</td><td>516</td><td>39429</td><td>~506</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>信息通信类，考公/就业均好</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>江苏科技大学苏州理工学院</td><td>民办</td><td>苏州</td><td>512</td><td>41388</td><td>~502</td><td><span class="tag tag-长三角">长三角</span></td><td>苏州地理优势</td></tr>
+          <tr data-tag="冲,民办,长三角"><td><span class="tag tag-冲">冲</span></td><td>苏州大学应用技术学院</td><td>民办</td><td>苏州</td><td>511</td><td>41863</td><td>~501</td><td><span class="tag tag-长三角">长三角</span></td><td>苏州地理优势，应用类</td></tr>
+
+          <!-- 稳 -->
+          <tr data-tag="稳,民办,长三角" class="highlight-row"><td><span class="tag tag-稳">稳</span></td><td>南京航空航天大学金城学院</td><td>民办</td><td>南京</td><td>509</td><td>42790</td><td>~500</td><td><span class="tag tag-长三角">长三角</span></td><td>航空工科背景，管理/计算机</td></tr>
+          <tr data-tag="稳,民办,长三角" class="highlight-row"><td><span class="tag tag-稳">稳</span></td><td>南京工业大学浦江学院</td><td>民办</td><td>南京</td><td>509</td><td>42790</td><td>~500</td><td><span class="tag tag-长三角">长三角</span></td><td>工科背景</td></tr>
+          <tr data-tag="稳,民办"><td><span class="tag tag-稳">稳</span></td><td>中国矿业大学徐海学院</td><td>民办</td><td>徐州</td><td>509</td><td>42790</td><td>~500</td><td></td><td>矿业工科背景</td></tr>
+          <tr data-tag="稳,民办,长三角" class="highlight-row"><td><span class="tag tag-稳">稳</span></td><td>南京理工大学泰州科技学院</td><td>民办</td><td>泰州</td><td>508</td><td>43276</td><td>~499</td><td><span class="tag tag-长三角">长三角</span></td><td>理工科背景</td></tr>
+          <tr data-tag="稳,民办,长三角"><td><span class="tag tag-稳">稳</span></td><td>南京师范大学中北学院</td><td>民办</td><td>镇江</td><td>507</td><td>43731</td><td>~498</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>师范方向，汉语言/法学</td></tr>
+          <tr data-tag="稳,民办"><td><span class="tag tag-稳">稳</span></td><td>厦门大学嘉庚学院</td><td>民办</td><td>漳州</td><td>505</td><td>~45257</td><td>~496</td><td></td><td>名校独立学院，品牌好</td></tr>
+          <tr data-tag="稳,民办"><td><span class="tag tag-稳">稳</span></td><td>四川大学锦江学院</td><td>民办</td><td>成都</td><td>506</td><td>~44700</td><td>~497</td><td></td><td>综合类名校背景</td></tr>
+          <tr data-tag="稳,公办,长三角" class="highlight-row"><td><span class="tag tag-稳">稳</span></td><td><strong>黄山学院</strong></td><td>公办</td><td>黄山</td><td>505</td><td>~45257</td><td>~496</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>公办二本，学费低，安徽</td></tr>
+          <tr data-tag="稳,公办,长三角" class="highlight-row"><td><span class="tag tag-稳">稳</span></td><td><strong>浙江万里学院</strong></td><td>公办</td><td>宁波</td><td>505</td><td>~45257</td><td>~496</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>浙江公办，就业好，学费低</td></tr>
+          <tr data-tag="稳,民办,长三角" class="highlight-row"><td><span class="tag tag-稳">稳</span></td><td>常州大学怀德学院</td><td>民办</td><td>常州</td><td>504</td><td>45258</td><td>~496</td><td><span class="tag tag-长三角">长三角</span></td><td>你的位次附近，化工/管理类</td></tr>
+          <tr data-tag="稳,民办"><td><span class="tag tag-稳">稳</span></td><td>江苏师范大学科文学院</td><td>民办</td><td>徐州</td><td>502</td><td>46230</td><td>~494</td><td><span class="tag tag-考公">考公</span></td><td>师范方向</td></tr>
+          <tr data-tag="稳,民办,长三角"><td><span class="tag tag-稳">稳</span></td><td>无锡太湖学院</td><td>民办</td><td>无锡</td><td>502</td><td>46230</td><td>~494</td><td><span class="tag tag-长三角">长三角</span></td><td>无锡地理好，会计/计算机</td></tr>
+          <tr data-tag="稳,民办"><td><span class="tag tag-稳">稳</span></td><td>辽宁师范大学海华学院</td><td>民办</td><td>大连</td><td>504</td><td>~45700</td><td>~495</td><td></td><td>师范方向，非长三角</td></tr>
+
+          <!-- 保 -->
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>江苏大学京江学院</td><td>民办</td><td>镇江</td><td>500</td><td>47157</td><td>~492</td><td><span class="tag tag-长三角">长三角</span></td><td>综合类，法学/管理类</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>南通理工学院</td><td>民办</td><td>南通</td><td>499</td><td>47640</td><td>~491</td><td><span class="tag tag-长三角">长三角</span></td><td>工科类</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>三江学院</td><td>民办</td><td>南京</td><td>498</td><td>48118</td><td>~491</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>南京老牌民办，法学/汉语言</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>合肥城市学院</td><td>民办</td><td>合肥</td><td>500</td><td>~47000</td><td>~492</td><td><span class="tag tag-长三角">长三角</span></td><td>安徽，城市规划类</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>南通大学杏林学院</td><td>民办</td><td>南通</td><td>496</td><td>49121</td><td>~489</td><td><span class="tag tag-长三角">长三角</span></td><td>医学方向</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>南京医科大学康达学院</td><td>民办</td><td>连云港</td><td>493</td><td>50537</td><td>~486</td><td><span class="tag tag-长三角">长三角</span></td><td>医学方向，就业稳定</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>上海外国语大学贤达经济人文学院</td><td>民办</td><td>上海</td><td>494</td><td>~49500</td><td>~487</td><td><span class="tag tag-考公">考公</span><span class="tag tag-长三角">长三角</span></td><td>上海+语言方向</td></tr>
+          <tr data-tag="保,民办,长三角"><td><span class="tag tag-保">保</span></td><td>南京传媒学院</td><td>民办</td><td>南京</td><td>491</td><td>51496</td><td>~485</td><td><span class="tag tag-长三角">长三角</span></td><td>传媒方向，品牌知名度高</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 优质专科专区 -->
+  <div class="card zhuan-card">
+    <h2>优质专科 · 考公/就业直通车<span>适合保底的"就业型"选择</span></h2>
+    <p style="font-size:12px;color:#666;margin-bottom:12px;">以下专科在历史类投档线接近甚至超过本科线，说明就业质量被市场认可。尤其铁路、司法、电力类专科，考公/考编对口度极高。</p>
+    <div class="school-table-wrap" style="max-height:360px">
+      <table>
+        <thead><tr><th>学校</th><th>城市</th><th>2025分</th><th>就业方向</th><th>考公适配</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td><strong>南京铁道职业技术学院</strong></td><td>南京</td><td>485</td><td>铁路系统</td><td>⭐⭐⭐⭐⭐</td><td>铁路国企定向招聘，就业率极高</td></tr>
+          <tr><td><strong>常州铁道职业技术学院</strong></td><td>常州</td><td>483</td><td>铁路/轨道交通</td><td>⭐⭐⭐⭐⭐</td><td>轨道交通就业，国企对口</td></tr>
+          <tr><td><strong>南京信息职业技术学院</strong></td><td>南京</td><td>482</td><td>信息技术</td><td>⭐⭐⭐</td><td>IT方向，也可专升本</td></tr>
+          <tr><td><strong>江苏司法警官职业学院</strong></td><td>南京</td><td>463</td><td>司法/监狱系统</td><td>⭐⭐⭐⭐⭐</td><td>考编/考公对口，司法系统招录</td></tr>
+          <tr><td>苏州经贸职业技术学院</td><td>苏州</td><td>466</td><td>商贸/财会</td><td>⭐⭐⭐⭐</td><td>苏州就业好，会计/国贸</td></tr>
+          <tr><td>苏州卫生职业技术学院</td><td>苏州</td><td>466</td><td>医护</td><td>⭐⭐⭐</td><td>护理/药学，就业稳定</td></tr>
+          <tr><td>江苏经贸职业技术学院</td><td>南京</td><td>462</td><td>商贸/财会</td><td>⭐⭐⭐⭐</td><td>会计/市场营销</td></tr>
+          <tr><td>常州信息职业技术学院</td><td>常州</td><td>462</td><td>IT/软件</td><td>⭐⭐⭐</td><td>软件/网络方向</td></tr>
+          <tr><td>江苏卫生健康职业学院</td><td>南京</td><td>461</td><td>医护</td><td>⭐⭐⭐</td><td>护理/康复</td></tr>
+          <tr><td>南京交通职业技术学院</td><td>南京</td><td>454</td><td>交通/物流</td><td>⭐⭐⭐</td><td>交通运输类</td></tr>
+          <tr><td>无锡商业职业技术学院</td><td>无锡</td><td>435</td><td>商贸/财会</td><td>⭐⭐⭐⭐</td><td>会计/电子商务</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 位次分布图 -->
+  <div class="card">
+    <h2>院校位次分布<span>你的位置 vs 各院校投档位次（2025年数据）</span></h2>
+    <div class="chart-wrap"><canvas id="rankChart"></canvas></div>
+  </div>
+
+  <!-- 填报策略 -->
+  <div class="card" style="border-left:4px solid #ea580c">
+    <h2>关键发现 & 策略建议</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="padding:14px;background:#f8fafc;border-radius:8px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">🔴 公办本科基本不可达</div>
+        <div style="font-size:12px;color:#666;line-height:1.7">江苏公办二本（盐城师范、泰州学院、常州工学院等）2025年投档线均在533分以上（位次31000），你的位次高出2万多名。除非有"冷门专业组"捡漏，否则公办本科不现实。唯一的公办选择是省外的黄山学院、浙江万里学院，但也很悬。</div>
+      </div>
+      <div style="padding:14px;background:#f8fafc;border-radius:8px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">🟠 民办本科是主战场</div>
+        <div style="font-size:12px;color:#666;line-height:1.7">你的位次恰好落在民办本科的核心区间（位次42000-50000）。南京的民办院校质量较高（南航金城、南理工泰州、南师大中北等），苏州的民办地理优势明显。建议优先选有"名校基因"的独立学院。</div>
+      </div>
+      <div style="padding:14px;background:#f8fafc;border-radius:8px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">🟢 优质专科值得认真考虑</div>
+        <div style="font-size:12px;color:#666;line-height:1.7">南京铁道（485分）和常州铁道（483分）的投档线已超过本科线，说明市场用脚投票。铁路专科进国企、司法警官考编，就业质量不输普通民办本科。如果考公/进体制是目标，这些专科的性价比可能更高。</div>
+      </div>
+      <div style="padding:14px;background:#f8fafc;border-radius:8px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">📌 下一步：专业筛选</div>
+        <div style="font-size:12px;color:#666;line-height:1.7">院校确定大方向后，关键是选对专业。建议下一步在目标院校中筛选"考公友好"专业（法学、汉语言文学、会计学、计算机、行政管理等），同一所学校不同专业的录取位次差距可达数千名。</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">数据来源：gk100.com / hfplg.com 公开投档数据 · 2025年投档线 · 分析仅供参考</p>
+</div>
+
+<script>
+// 筛选功能
+function filterTable(tag) {
+  const rows = document.querySelectorAll('#schoolTable tbody tr');
+  const btns = document.querySelectorAll('.filter-btn');
+  btns.forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  rows.forEach(row => {
+    const tags = row.getAttribute('data-tag') || '';
+    if (tag === 'all') { row.style.display = ''; }
+    else { row.style.display = tags.includes(tag) ? '' : 'none'; }
+  });
+}
+
+// 位次分布图
+const ctx = document.getElementById('rankChart').getContext('2d');
+const schools = [
+  {name:'南审金审',rank:35056,tier:'冲'},{name:'南理工紫金',rank:36539,tier:'冲'},
+  {name:'东大成贤',rank:37029,tier:'冲'},{name:'扬大广陵',rank:38489,tier:'冲'},
+  {name:'南财红山',rank:38961,tier:'冲'},{name:'苏科大天平',rank:39429,tier:'冲'},
+  {name:'南邮通达',rank:39429,tier:'冲'},{name:'苏大应用',rank:41863,tier:'冲'},
+  {name:'南航金城',rank:42790,tier:'稳'},{name:'南工大浦江',rank:42790,tier:'稳'},
+  {name:'矿大徐海',rank:42790,tier:'稳'},{name:'南理工泰州',rank:43276,tier:'稳'},
+  {name:'南师大中北',rank:43731,tier:'稳'},{name:'黄山学院',rank:45257,tier:'稳'},
+  {name:'浙万里',rank:45257,tier:'稳'},{name:'常大怀德',rank:45258,tier:'稳'},
+  {name:'太湖学院',rank:46230,tier:'稳'},{name:'苏师大科文',rank:46230,tier:'稳'},
+  {name:'江苏京江',rank:47157,tier:'保'},{name:'南通理工',rank:47640,tier:'保'},
+  {name:'三江学院',rank:48118,tier:'保'},{name:'南传',rank:51496,tier:'保'},
+  {name:'南医康达',rank:50537,tier:'保'},
+];
+const colorMap = {'冲':'#dc2626','稳':'#ea580c','保':'#16a34a'};
+
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: schools.map(s => s.name),
+    datasets: [{
+      label: '2025投档位次',
+      data: schools.map(s => s.rank),
+      backgroundColor: schools.map(s => colorMap[s.tier] + '99'),
+      borderColor: schools.map(s => colorMap[s.tier]),
+      borderWidth: 1,
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (item) => `位次: ${item.raw.toLocaleString()}` } },
+      annotation: {}
+    },
+    scales: {
+      x: {
+        title: { display: true, text: '投档位次（数字越小竞争越大）', font: { size: 12 } },
+        grid: { color: '#f0f0f0' },
+        min: 30000, max: 55000
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  },
+  plugins: [{
+    id: 'userLine',
+    afterDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      const x = scales.x.getPixelForValue(44282);
+      ctx.save();
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      ctx.moveTo(x, chartArea.top);
+      ctx.lineTo(x, chartArea.bottom);
+      ctx.stroke();
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('你的位次 44282', x + 5, chartArea.top + 14);
+      ctx.restore();
+    }
+  }]
+});
+</script>
+</body>
+</html>

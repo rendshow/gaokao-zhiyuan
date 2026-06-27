@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考志愿策略分析 - 江苏历史类</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Microsoft YaHei","PingFang SC",sans-serif; background:#0f172a; color:#e2e8f0; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  .wrap { max-width:640px; width:90%; text-align:center; }
+  .badge { display:inline-block; padding:4px 12px; border-radius:20px; background:rgba(99,102,241,.15); color:#818cf8; font-size:12px; font-weight:500; margin-bottom:16px; }
+  h1 { font-size:28px; font-weight:700; margin-bottom:8px; color:#f1f5f9; }
+  .sub { color:#94a3b8; font-size:14px; margin-bottom:32px; line-height:1.6; }
+  .cards { display:flex; flex-direction:column; gap:12px; margin-bottom:32px; }
+  .card { display:flex; align-items:center; gap:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:20px 24px; text-decoration:none; color:#e2e8f0; transition:all .2s; text-align:left; }
+  .card:hover { background:rgba(99,102,241,.1); border-color:rgba(99,102,241,.3); transform:translateY(-2px); }
+  .card-icon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .card-icon.blue { background:rgba(37,99,235,.15); }
+  .card-icon.orange { background:rgba(234,88,12,.15); }
+  .card-icon.green { background:rgba(22,163,74,.15); }
+  .card-icon.purple { background:rgba(147,51,234,.15); }
+  .card h3 { font-size:15px; font-weight:600; margin-bottom:4px; }
+  .card p { font-size:12px; color:#94a3b8; line-height:1.5; }
+  .meta { color:#475569; font-size:11px; line-height:1.8; }
+  .meta span { color:#64748b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="badge">2026 江苏高考 · 历史类</div>
+  <h1>志愿填报策略分析</h1>
+  <p class="sub">504分 · 位次 44,282 · 基于 2023-2026 四年数据<br>长三角优先 · 考公友好 · 男生适配</p>
+
+  <div class="cards">
+    <a class="card" href="./rank-analysis.html">
+      <div class="card-icon blue">📊</div>
+      <div>
+        <h3>Step 1 · 位次定位分析</h3>
+        <p>四年一分一段表对比、分数段人数密度图、跨年份位次等效换算，锚定真实竞争力</p>
+      </div>
+    </a>
+    <a class="card" href="./school-pool.html">
+      <div class="card-icon orange">🎯</div>
+      <div>
+        <h3>Step 2 · 院校机会池</h3>
+        <p>冲/稳/保梯度分类、35所本科+11所专科候选、按标签筛选（公办/长三角/考公友好）</p>
+      </div>
+    </a>
+    <a class="card" href="./major-analysis.html" style="opacity:.5;pointer-events:none">
+      <div class="card-icon green">📋</div>
+      <div>
+        <h3>Step 3 · 专业筛选 <span style="font-size:11px;color:#64748b">（制作中）</span></h3>
+        <p>在目标院校中筛选考公友好+男生适配的专业方向，标注各专业录取位次</p>
+      </div>
+    </a>
+    <a class="card" href="./decision-matrix.html" style="opacity:.5;pointer-events:none">
+      <div class="card-icon purple">⚖️</div>
+      <div>
+        <h3>Step 4 · 决策矩阵 <span style="font-size:11px;color:#64748b">（制作中）</span></h3>
+        <p>综合录取概率、学校层次、专业满意度、地域四项打分排序，输出最终方案</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="meta">
+    数据来源：<span>江苏省教育考试院</span> · <span>gk100.com</span> · <span>hfplg.com</span><br>
+    分析仅供志愿填报参考，请以官方数据为准
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>江苏历史类 位次定位分析 - 陆浩然</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f5f7fa; color: #1a1a2e; padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #1a1a2e; }
+  .card h2 span { font-size: 12px; font-weight: 400; color: #888; margin-left: 8px; }
+
+  /* 顶部指标卡 */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .metric { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); text-align: center; }
+  .metric .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .metric .value { font-size: 28px; font-weight: 700; color: #2563eb; }
+  .metric .note { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .metric.highlight .value { color: #dc2626; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+  tr:hover td { background: #f8fafc; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .tag-blue { background: #eff6ff; color: #2563eb; }
+  .tag-green { background: #f0fdf4; color: #16a34a; }
+  .tag-orange { background: #fff7ed; color: #ea580c; }
+  .tag-red { background: #fef2f2; color: #dc2626; }
+
+  /* 密度解读 */
+  .density-info { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .density-item { padding: 16px; border-radius: 8px; background: #f8fafc; }
+  .density-item .title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .density-item .desc { font-size: 12px; color: #666; line-height: 1.6; }
+
+  .chart-wrap { position: relative; height: 340px; }
+  .footer { text-align: center; color: #bbb; font-size: 11px; margin-top: 24px; }
+
+  @media (max-width: 700px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .density-info { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>江苏历史类 · 位次定位分析</h1>
+  <p class="subtitle">2026年高考 · 504分 · 位次 44282 · 数据覆盖 2023-2026 四年</p>
+
+  <!-- 顶部指标 -->
+  <div class="metrics">
+    <div class="metric highlight">
+      <div class="label">2026 位次</div>
+      <div class="value">44,282</div>
+      <div class="note">505分累计44281之后</div>
+    </div>
+    <div class="metric">
+      <div class="label">≈ 2025 等效分</div>
+      <div class="value">~506</div>
+      <div class="note">2025年位次44233=507分</div>
+    </div>
+    <div class="metric">
+      <div class="label">≈ 2024 等效分</div>
+      <div class="value">~493</div>
+      <div class="note">2024年位次44010=493分</div>
+    </div>
+    <div class="metric">
+      <div class="label">≈ 2023 等效分</div>
+      <div class="value">~493</div>
+      <div class="note">2023年位次44267=493分</div>
+    </div>
+  </div>
+
+  <!-- 图1: 分数段人数密度 -->
+  <div class="card">
+    <h2>分数段人数密度<span>你的分数上下20分区间（484-524分）· 四年对比</span></h2>
+    <div class="chart-wrap"><canvas id="densityChart"></canvas></div>
+    <div class="density-info">
+      <div class="density-item">
+        <div class="title">📊 密度观察</div>
+        <div class="desc">2026年504分附近每分约440-526人，属于中等密集区。505-506分区间出现了一个小峰值（505分504人，506分526人），说明这一段竞争较为激烈。你恰好在峰值下沿，同分竞争对手不算最多但也不少。</div>
+      </div>
+      <div class="density-item">
+        <div class="title">🎯 填报启示</div>
+        <div class="desc">中等密集区意味着每一分大约对应440-500人，志愿梯度需要合理拉开。建议"冲"的学校可以往上看到520分左右的历年录取数据（对应高出约1.5-2万个位次），"保"的学校则需要看到本科线附近，确保有安全垫。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图2: 跨年份位次-分数对照 -->
+  <div class="card">
+    <h2>跨年份位次等效换算<span>同一位次在不同年份对应的分数</span></h2>
+    <div class="chart-wrap"><canvas id="equivChart"></canvas></div>
+  </div>
+
+  <!-- 表: 关键控制线对比 -->
+  <div class="card">
+    <h2>四年批次线 & 关键分数对照</h2>
+    <table>
+      <thead>
+        <tr><th>年份</th><th>本科线</th><th>本科线位次</th><th>特招线</th><th>特招线位次</th><th>600分位次</th><th>你的位次≈当年分数</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>2026</strong></td>
+          <td>~484分</td><td>~54036</td>
+          <td>待公布</td><td>—</td>
+          <td>5533</td>
+          <td><span class="tag tag-red">504分（实际）</span></td>
+        </tr>
+        <tr>
+          <td><strong>2025</strong></td>
+          <td>482分</td><td>56398</td>
+          <td>537分</td><td>29839</td>
+          <td>5796</td>
+          <td><span class="tag tag-blue">≈506分</span></td>
+        </tr>
+        <tr>
+          <td><strong>2024</strong></td>
+          <td>478分</td><td>50966</td>
+          <td>530分</td><td>26805</td>
+          <td>4028</td>
+          <td><span class="tag tag-blue">≈493分</span></td>
+        </tr>
+        <tr>
+          <td><strong>2023</strong></td>
+          <td>~474分</td><td>~50300</td>
+          <td>待查</td><td>—</td>
+          <td>4244</td>
+          <td><span class="tag tag-blue">≈493分</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 位次区间定位 -->
+  <div class="card">
+    <h2>你的位次区间定位<span>2026年数据</span></h2>
+    <table>
+      <thead>
+        <tr><th>分数段</th><th>位次区间</th><th>人数</th><th>每分平均人数</th><th>定位</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>520-524</td><td>34671 - 36103</td><td>1,432人</td><td>~477人/分</td><td><span class="tag tag-green">冲（高2-3万位次）</span></td></tr>
+        <tr><td>515-519</td><td>37055 - 39467</td><td>2,412人</td><td>~482人/分</td><td><span class="tag tag-green">冲（高1-2万位次）</span></td></tr>
+        <tr><td>510-514</td><td>39954 - 41844</td><td>1,890人</td><td>~478人/分</td><td><span class="tag tag-blue">稳（高0.5-1万）</span></td></tr>
+        <tr style="background:#fff7ed"><td><strong>505-509</strong></td><td><strong>42322 - 44281</strong></td><td><strong>1,959人</strong></td><td><strong>~475人/分</strong></td><td><span class="tag tag-orange">稳（你的区间）</span></td></tr>
+        <tr><td>500-504</td><td>44723 - 46654</td><td>1,931人</td><td>~476人/分</td><td><span class="tag tag-orange">保（低0.5万）</span></td></tr>
+        <tr><td>495-499</td><td>47109 - 48963</td><td>1,856人</td><td>~464人/分</td><td><span class="tag tag-red">保（低1-2万）</span></td></tr>
+        <tr><td>484-494</td><td>49444 - 54036</td><td>4,592人</td><td>~462人/分</td><td><span class="tag tag-red">垫底（本科线附近）</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="footer">数据来源：江苏省教育考试院 · 分析仅供志愿填报参考</p>
+</div>
+
+<script>
+// ====== 数据 ======
+const scores2026 = [484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524];
+const counts2026 = [500,422,474,460,422,507,472,415,472,448,481,472,459,483,440,455,463,446,526,496,442,504,526,452,477,478,460,471,482,477,487,497,469,495,466,485,459,493,496,469,467];
+const counts2025 = [474,521,487,438,479,468,530,510,497,462,471,488,457,490,478,513,483,478,449,495,477,545,479,503,455,486,454,473,475,490,474,514,481,468,472,481,478,501,490,489,493];
+const counts2024 = [444,470,461,480,486,477,506,453,482,472,460,470,463,503,466,459,424,438,480,469,453,453,501,434,472,497,479,494,473,511,457,470,458,426,431,469,451,515,471,445,463];
+const counts2023 = [560,532,487,482,496,527,517,521,453,540,493,512,501,512,516,449,508,474,493,505,528,473,473,441,481,503,500,486,497,504,481,483,507,486,456,517,496,456,474,487,478];
+
+// ====== 图1: 密度图 ======
+const ctx1 = document.getElementById('densityChart').getContext('2d');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: scores2026.map(s => s + '分'),
+    datasets: [
+      { label: '2026', data: counts2026, backgroundColor: 'rgba(37,99,235,.7)', borderRadius: 3, barPercentage: 0.7 },
+      { label: '2025', data: counts2025, backgroundColor: 'rgba(22,163,74,.5)', borderRadius: 3, barPercentage: 0.7 },
+      { label: '2024', data: counts2024, backgroundColor: 'rgba(234,88,12,.4)', borderRadius: 3, barPercentage: 0.7 },
+      { label: '2023', data: counts2023, backgroundColor: 'rgba(147,51,234,.35)', borderRadius: 3, barPercentage: 0.7 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, pointStyle: 'rect' } },
+      tooltip: {
+        callbacks: {
+          title: (items) => items[0].label,
+          label: (item) => `${item.dataset.label}: ${item.raw}人`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+      y: { title: { display: true, text: '本段人数', font: { size: 12 } }, grid: { color: '#f0f0f0' } }
+    }
+  }
+});
+
+// ====== 图2: 跨年份等效分数线 ======
+const ctx2 = document.getElementById('equivChart').getContext('2d');
+// 选几个关键位次，查对应各年分数
+function findScore(cumData, targetRank) {
+  for (let i = 0; i < cumData.length; i++) {
+    if (cumData[i].cum >= targetRank) return cumData[i].score;
+  }
+  return null;
+}
+// 简化：直接用已知的关键数据点
+const ranks = [20000, 30000, 40000, 44282, 50000, 55000];
+const rankLabels = ranks.map(r => r === 44282 ? '你的位次 44282' : r.toLocaleString());
+
+// 2026 cumulative from data
+const cum2026 = []; let c = 0;
+[{s:657,ct:104},{s:656,ct:15},{s:655,ct:16},{s:654,ct:12},{s:653,ct:15},{s:652,ct:22},{s:651,ct:16},{s:650,ct:20},{s:649,ct:37},{s:648,ct:25},{s:647,ct:18},{s:646,ct:32},{s:645,ct:38},{s:644,ct:31},{s:643,ct:39},{s:642,ct:45},{s:641,ct:46},{s:640,ct:40},{s:639,ct:50},{s:638,ct:51},{s:637,ct:46},{s:636,ct:44},{s:635,ct:47},{s:634,ct:72},{s:633,ct:66},{s:632,ct:70},{s:631,ct:68},{s:630,ct:85},{s:629,ct:76},{s:628,ct:88},{s:627,ct:77},{s:626,ct:87},{s:625,ct:85},{s:624,ct:96},{s:623,ct:101},{s:622,ct:99},{s:621,ct:116},{s:620,ct:113},{s:619,ct:131},{s:618,ct:131},{s:617,ct:131},{s:616,ct:134},{s:615,ct:152},{s:614,ct:163},{s:613,ct:159},{s:612,ct:173},{s:611,ct:140},{s:610,ct:146},{s:609,ct:173},{s:608,ct:194},{s:607,ct:177},{s:606,ct:187},{s:605,ct:202},{s:604,ct:185},{s:603,ct:209},{s:602,ct:222},{s:601,ct:201},{s:600,ct:215},{s:599,ct:222},{s:598,ct:229},{s:597,ct:236},{s:596,ct:261},{s:595,ct:241},{s:594,ct:244},{s:593,ct:299},{s:592,ct:247},{s:591,ct:290},{s:590,ct:302},{s:589,ct:264},{s:588,ct:300},{s:587,ct:271},{s:586,ct:288},{s:585,ct:287},{s:584,ct:312},{s:583,ct:353},{s:582,ct:328},{s:581,ct:329},{s:580,ct:321},{s:579,ct:333},{s:578,ct:328},{s:577,ct:347},{s:576,ct:346},{s:575,ct:359},{s:574,ct:357},{s:573,ct:328},{s:572,ct:389},{s:571,ct:360},{s:570,ct:383},{s:569,ct:377},{s:568,ct:421},{s:567,ct:386},{s:566,ct:385},{s:565,ct:410},{s:564,ct:391},{s:563,ct:399},{s:562,ct:453},{s:561,ct:422},{s:560,ct:388},{s:559,ct:413},{s:558,ct:424},{s:557,ct:422},{s:556,ct:445},{s:555,ct:430},{s:554,ct:435},{s:553,ct:448},{s:552,ct:462},{s:551,ct:430},{s:550,ct:427},{s:549,ct:423},{s:548,ct:452},{s:547,ct:433},{s:546,ct:457},{s:545,ct:433},{s:544,ct:441},{s:543,ct:465},{s:542,ct:489},{s:541,ct:441},{s:540,ct:466},{s:539,ct:479},{s:538,ct:468},{s:537,ct:466},{s:536,ct:468},{s:535,ct:442},{s:534,ct:442},{s:533,ct:497},{s:532,ct:495},{s:531,ct:459},{s:530,ct:496},{s:529,ct:493},{s:528,ct:477},{s:527,ct:485},{s:526,ct:482},{s:525,ct:467},{s:524,ct:467},{s:523,ct:469},{s:522,ct:496},{s:521,ct:493},{s:520,ct:459},{s:519,ct:485},{s:518,ct:466},{s:517,ct:495},{s:516,ct:469},{s:515,ct:497},{s:514,ct:487},{s:513,ct:477},{s:512,ct:482},{s:511,ct:471},{s:510,ct:460},{s:509,ct:478},{s:508,ct:477},{s:507,ct:452},{s:506,ct:526},{s:505,ct:504},{s:504,ct:442},{s:503,ct:496},{s:502,ct:526},{s:501,ct:446},{s:500,ct:463},{s:499,ct:455},{s:498,ct:440},{s:497,ct:483},{s:496,ct:459},{s:495,ct:472},{s:494,ct:481},{s:493,ct:448},{s:492,ct:472},{s:491,ct:415},{s:490,ct:472},{s:489,ct:507},{s:488,ct:422},{s:487,ct:460},{s:486,ct:474},{s:485,ct:422},{s:484,ct:500}]
+.forEach(d => { c += d.ct; cum2026.push({score: d.s, cum: c}); });
+
+// 已知等效分数
+const eqScores = {
+  2026: [559, 533, 509, 504, 497, 484],
+  2025: [561, 536, 510, 506, 500, 482],
+  2024: [549, 531, 510, 493, 488, 478],
+  2023: [546, 528, 508, 493, 488, 481],
+};
+
+new Chart(ctx2, {
+  type: 'line',
+  data: {
+    labels: rankLabels,
+    datasets: [
+      { label: '2026', data: eqScores[2026], borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.3, pointRadius: 6, pointHoverRadius: 8, borderWidth: 2.5 },
+      { label: '2025', data: eqScores[2025], borderColor: '#16a34a', backgroundColor: '#16a34a', tension: 0.3, pointRadius: 5, borderWidth: 2 },
+      { label: '2024', data: eqScores[2024], borderColor: '#ea580c', backgroundColor: '#ea580c', tension: 0.3, pointRadius: 5, borderWidth: 2 },
+      { label: '2023', data: eqScores[2023], borderColor: '#9333ea', backgroundColor: '#9333ea', tension: 0.3, pointRadius: 5, borderWidth: 2 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true } },
+      tooltip: {
+        callbacks: {
+          label: (item) => `${item.dataset.label}: ${item.raw}分`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: { title: { display: true, text: '等效分数', font: { size: 12 } }, min: 470, max: 570, grid: { color: '#f0f0f0' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
